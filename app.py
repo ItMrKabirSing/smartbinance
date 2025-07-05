@@ -11,6 +11,7 @@ import time
 from functools import wraps
 import threading
 from datetime import datetime
+import os  # Added for file handling
 
 logging.basicConfig(
     level=logging.INFO,
@@ -274,7 +275,16 @@ def process_sellers_data(sellers, filters=None):
 
 @app.get("/", response_class=HTMLResponse)
 async def root():
-    return HTMLResponse(content="status.html")
+    try:
+        # Read the status.html file from the root directory
+        with open("status.html", "r", encoding="utf-8") as file:
+            content = file.read()
+        return HTMLResponse(content=content)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="status.html file not found")
+    except Exception as e:
+        logger.error(f"Error reading status.html: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.get("/health")
 async def health_check():
@@ -439,7 +449,7 @@ async def get_supported_currencies():
     }
 
 @app.exception_handler(404)
-async def not_found(request: Request, exc: HTTPException):
+async def not_found(dot: Request, exc: HTTPException):
     return {
         "success": False,
         "error": "Endpoint not found",
